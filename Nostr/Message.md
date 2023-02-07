@@ -69,3 +69,11 @@ EVENT 消息必须仅与与客户端先前发起的订阅相关的订阅 ID 一�
 ```json
 ["NOTICE", <message>], used to send human-readable error messages or other things to clients.
 ```
+
+3. 通知客户端所有的存储的事件已经发送了。
+
+```json
+["EOSE", <subscription_id>]
+```
+
+表示在这条消息之后发生的所有事件都是新发布的。
