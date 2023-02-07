@@ -3,6 +3,7 @@
 ## Relays 查询 网站
 
 1. https://nostr.watch/relays/find
+2. https://nostr-registry.netlify.app/
 
 ## Relays 返回信息
 
@@ -19,5 +20,3 @@
 ```
 
 ![](../img/relay1.jpg)
-
-2. https://nostr-registry.netlify.app/
