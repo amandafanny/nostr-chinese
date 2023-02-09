@@ -34,7 +34,9 @@ filters 的格式
   "#p": <a list of pubkeys that are referenced in a "p" tag>,
   "since": <an integer unix timestamp, events must be newer than this to pass>,
   "until": <an integer unix timestamp, events must be older than this to pass>,
-  "limit": <maximum number of events to be returned in the initial query>
+  "limit": <maximum number of events to be returned in the initial query>,
+  "search": <string>, // NIP-50
+  "include": "spam", // NIP-50
 }
 ```
 
@@ -52,6 +54,12 @@ ids 和 authors 列表包含小写的十六进制字符串，可以是 64 个字
 
 ```json
 ["CLOSE", <subscription_id>]
+```
+
+4. 授权 relay
+
+```json
+["AUTH", <signed-event-json>]
 ```
 
 ### Relays 发送给 Clients(客户端) 的消息
@@ -77,3 +85,26 @@ EVENT 消息必须仅与与客户端先前发起的订阅相关的订阅 ID 一�
 ```
 
 表示在这条消息之后发生的所有事件都是新发布的。
+
+4. 通知客户端一个事件是否成功了
+
+```json
+["OK", <event_id>, <true|false>, <message>]
+```
+
+返回值:
+
+- `true` 事件已经保存在数据库中了,后续的 message 格式
+  - `duplicate:`: 事件重复
+- `false` 事件还没有保存到数据库, 后续的 message 格式
+  - `blocked:`: 公钥或网络地址已被阻止、禁止或不在白名单中
+  - `invalid:`: 事件不是合法的,非格式错误,如果是格式错误，应该使用 NOTICE 消息
+  - `pow:`: 事件不满足工作量证明(proof-of-work)的难度
+  - `rate-limited:`: relay 有速率限制
+  - `error:`: 由于服务器错误事件无法保存
+
+5. 请求客户端授权访问受限资源
+
+```json
+["AUTH", <challenge-string>]
+```

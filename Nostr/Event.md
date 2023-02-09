@@ -79,7 +79,7 @@ https://<domain>/.well-known/nostr.json?name=<local-part>
 
 #### 2: recommend_server(NIP-01)
 
-`content` 是事件创建者想要他的关注者推荐的 relay 的 URL (例如, wss://somerelay.com).
+`content` 是事件创建者想要向他的关注者推荐的 relay 的 URL (例如, wss://somerelay.com).
 
 #### 3: contact list(NIP-02)
 
@@ -127,6 +127,15 @@ let event = {
 
 #### 5: deletion
 
+```json
+[
+  "delegation",
+  <pubkey of the delegator>,
+  <conditions query string>,
+  <64-byte Schnorr signature of the sha256 hash of the delegation token>
+]
+```
+
 `tags` 表明需要删除的事件
 
 `content` 字段可以包含描述删除原因的文本注释。
@@ -134,6 +143,149 @@ let event = {
 relays 应该删除或停止发布任何与删除请求具有相同 ID 的引用事件。 客户端应该隐藏或以其他方式指示引用事件的删除状态。
 
 relays 应该无限期地继续发布/共享删除事件，因为客户端可能已经有了要删除的事件。 此外，客户端应该将删除事件广播到其他没有删除事件的中继。
+
+##### delegation token
+
+```json
+nostr:delegation:<pubkey of publisher (delegatee)>:<conditions query string>
+```
+
+#### 7: reaction
+
+表达对其他 note 的反应，是否喜欢
+
+`content`值:
+
+- `+` 表示 喜欢;
+- `-`表示不喜欢；
+- 也可以是 emoji
+
+#### 40: channel create
+
+```json
+{
+    "content": "{\"name\": \"Demo Channel\", \"about\": \"A test channel.\", \"picture\": \"https://placekitten.com/200/200\"}",
+    ...
+}
+```
+
+#### 41: channel metadata
+
+```json
+{
+    "content": "{\"name\": \"Updated Demo Channel\", \"about\": \"Updating a test channel.\", \"picture\": \"https://placekitten.com/201/201\"}",
+    "tags": [["e", <channel_create_event_id>, <relay-url>]],
+    ...
+}
+```
+
+#### 42: channel message
+
+```json
+// Root message
+{
+    "content": <string>,
+    "tags": [["e", <kind_40_event_id>, <relay-url>, "root"]],
+    ...
+}
+
+// Reply to another message
+{
+    "content": <string>,
+    "tags": [
+        ["e", <kind_42_event_id>, <relay-url>, "reply"],
+        ["p", <pubkey>, <relay-url>],
+        ...
+    ],
+    ...
+}
+```
+
+#### 43: hide message
+
+```json
+{
+    "content": "{\"reason\": \"Dick pic\"}",
+    "tags": [["e", <kind_42_event_id>]],
+    ...
+}
+```
+
+#### 44: mute user
+
+拉黑其他用户
+
+```json
+{
+    "content": "{\"reason\": \"Posting dick pics\"}",
+    "tags": [["p", <pubkey>]],
+    ...
+}
+```
+
+#### 1984: report
+
+report type:
+
+- nudity - 对裸体、色情等的描绘
+- profanity - 亵渎、仇恨言论等
+- illegal - 在某些司法管辖区可能是非法的
+- spam - 垃圾
+- impersonation - 某人假装成其他人
+
+##### Example events
+
+```json
+{
+  "kind": 1984,
+  "tags": [
+    [ "p", <pubkey>, "nudity"]
+  ],
+  "content": "",
+  ...
+}
+
+{
+  "kind": 1984,
+  "tags": [
+    [ "e", <eventId>, "illegal"],
+    [ "p", <pubkey>]
+  ],
+  "content": "He's insulting the king!",
+  ...
+}
+
+{
+  "kind": 1984,
+  "tags": [
+    [ "p", <impersonator pubkey>, "impersonation"],
+    [ "p", <victim pubkey>]
+  ],
+  "content": "Profile is imitating #[1]",
+  ...
+}
+```
+
+#### 10002: Relay List Metadata
+
+#### 22242: signed
+
+```json
+{
+  "id": "...",
+  "pubkey": "...",
+  "created_at": 1669695536,
+  "kind": 22242,
+  "tags": [
+    ["relay", "wss://relay.example.com/"],
+    ["challenge", "challengestringhere"]
+  ],
+  "content": "",
+  "sig": "..."
+}
+```
+
+这个事件不应该被广播给其他客户端
 
 ### tags
 
@@ -161,6 +313,10 @@ relays 应该无限期地继续发布/共享删除事件，因为客户端可能
 
 与话题相关
 
+#### d
+
+[参考](https://github.com/nostr-protocol/nips/blob/master/33.md)
+
 #### nonce
 
 ```json
@@ -176,3 +332,73 @@ relays 应该无限期地继续发布/共享删除事件，因为客户端可能
 主题标签, 适用于 kind: 1
 
 Proof of Work (PoW) 相关
+
+#### delegation
+
+```json
+[
+  "delegation",
+  <pubkey of the delegator>,
+  <conditions query string>,
+  <64-byte Schnorr signature of the sha256 hash of the delegation token>
+]
+```
+
+##### 例子
+
+```json
+# Delegator: 委托人
+privkey: ee35e8bb71131c02c1d7e73231daa48e9953d329a4b701f7133c8f46dd21139c
+pubkey:  8e0d3d3eb2881ec137a11debe736a9086715a8c8beeeda615780064d68bc25dd
+
+# Delegatee: 受托人
+privkey: 777e4f60b4aa87937e13acc84f7abcc3c93cc035cb4c1e9f7a9086dd78fffce1
+pubkey:  477318cfb5427b9cfc66a9fa376150c1ddbc62115ae27cef72417eb959691396
+```
+
+delegation string
+
+```json
+nostr:delegation:477318cfb5427b9cfc66a9fa376150c1ddbc62115ae27cef72417eb959691396:kind=1&created_at>1674834236&created_at<1677426236
+```
+
+delegation token
+
+```json
+6f44d7fe4f1c09f3954640fb58bd12bae8bb8ff4120853c4693106c82e920e2b898f1f9ba9bd65449a987c39c0423426ab7b53910c0c6abfb41b30bc16e5f524
+```
+
+委托事件
+
+```json
+{
+  "id": "e93c6095c3db1c31d15ac771f8fc5fb672f6e52cd25505099f62cd055523224f",
+  "pubkey": "477318cfb5427b9cfc66a9fa376150c1ddbc62115ae27cef72417eb959691396",
+  "created_at": 1677426298,
+  "kind": 1,
+  "tags": [
+    [
+      "delegation",
+      "8e0d3d3eb2881ec137a11debe736a9086715a8c8beeeda615780064d68bc25dd", // 委托人的公钥
+      "kind=1&created_at>1674834236&created_at<1677426236", // 条件
+      "6f44d7fe4f1c09f3954640fb58bd12bae8bb8ff4120853c4693106c82e920e2b898f1f9ba9bd65449a987c39c0423426ab7b53910c0c6abfb41b30bc16e5f524" // delegation token
+    ]
+  ],
+  "content": "Hello, world!",
+  "sig": "633db60e2e7082c13a47a6b19d663d45b2a2ebdeaf0b4c35ef83be2738030c54fc7fd56d139652937cdca875ee61b51904a1d0d0588a6acd6168d7be2909d693"
+}
+```
+
+#### content-warning
+
+```json
+["content-warning", "reason"] /* reason is optional */
+```
+
+使用户能够指定事件的内容是否需要读者批准才能显示。客户端可以隐藏内容，直到用户对其进行操作。
+
+#### expiration
+
+```json
+["expiration", "1600000000"]
+```
